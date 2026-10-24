@@ -30,6 +30,7 @@
   .url svg { width: 30px; height: 30px; fill: #8fb4ff; flex: none; }
   #url { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
+  .ip { margin-top: 14px; font-size: 22px; color: #7f8ba0; }
   .status { display: flex; align-items: center; gap: 16px; margin-top: 30px; font-size: 28px; color: #dbe4f2; }
   .dot { width: 18px; height: 18px; border-radius: 50%; background: #f0b34a; box-shadow: 0 0 0 6px rgba(240, 179, 74, 0.15); flex: none; }
   .dot.ok { background: #35c98b; box-shadow: 0 0 0 6px rgba(53, 201, 139, 0.15); }
@@ -57,6 +58,7 @@
     </div>
     <div class="lead">用手机或电脑打字，直接填进电视上的搜索框。中文、拼音、语音输入都可以。</div>
     <div class="url"><svg viewBox="0 0 24 24"><path d="M10.6 13.4a1 1 0 0 1 0-1.4l3.5-3.5a3 3 0 1 1 4.24 4.24l-1.77 1.77a1 1 0 1 1-1.41-1.41l1.77-1.77a1 1 0 0 0-1.42-1.42L12 13.4a1 1 0 0 1-1.4 0Zm2.8-2.8a1 1 0 0 1 0 1.4l-3.5 3.5a3 3 0 1 1-4.24-4.24l1.77-1.77a1 1 0 1 1 1.41 1.41l-1.77 1.77a1 1 0 0 0 1.42 1.42L12 10.6a1 1 0 0 1 1.4 0Z"/></svg><span id="url">正在启动…</span></div>
+    <div class="ip" id="ipUrl"></div>
     <div class="status"><span class="dot" id="dot"></span><span id="statusText">正在连接…</span></div>
     <div class="steps">
       <div class="step"><b>1</b><div>扫码或在电脑浏览器打开地址，建议加到主屏幕</div></div>

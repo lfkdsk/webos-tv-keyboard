@@ -63,11 +63,18 @@ function fromApp(m) {
 }
 
 service.register('state', (m) => {
+  // The TV announces <hostname>.local over mDNS on its own, so that name survives IP changes
+  // and switching between Ethernet and Wi-Fi; the QR uses it, the IP is shown as a fallback.
   const ip = lanAddress();
-  const url = ip ? 'http://' + ip + ':' + PORT + '/?t=' + TOKEN : null;
+  const host = (os.hostname() || '').toLowerCase();
+  const mdns = /^[a-z0-9-]+$/.test(host) ? host + '.local' : null;
+  const tail = ':' + PORT + '/?t=' + TOKEN;
+  const url = mdns ? 'http://' + mdns + tail : ip ? 'http://' + ip + tail : null;
+  const ipUrl = ip ? 'http://' + ip + tail : null;
   let svg = null;
   if (url && fromApp(m)) { const qr = qrcode(0, 'M'); qr.addData(url); qr.make(); svg = qr.createSvgTag({ cellSize: 8, margin: 2, scalable: true }); }
-  m.respond(Object.assign({ returnValue: true, listening, listenError, url: fromApp(m) ? url : null, qr: svg }, snapshot()));
+  const own = fromApp(m);
+  m.respond(Object.assign({ returnValue: true, listening, listenError, url: own ? url : null, ipUrl: own ? ipUrl : null, qr: svg }, snapshot()));
 });
 
 // Called by the boot activity; starting the service is the point, nothing else to do.
