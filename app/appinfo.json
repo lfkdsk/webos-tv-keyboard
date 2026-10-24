@@ -1,0 +1,16 @@
+{
+  "id": "com.lfkdsk.tvkeyboard",
+  "version": "1.0.0",
+  "vendor": "lfkdsk",
+  "type": "web",
+  "main": "index.html",
+  "title": "电视键盘",
+  "appDescription": "Type into any TV text field from a phone or computer",
+  "icon": "icon.png",
+  "largeIcon": "largeIcon.png",
+  "bgColor": "#0e1116",
+  "iconColor": "#0e1116",
+  "resolution": "1920x1080",
+  "disableBackHistoryAPI": true,
+  "requiredACG": []
+}

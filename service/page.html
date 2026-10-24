@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>电视键盘</title>
+<style>
+  :root { --bg: #0e1116; --card: #191d24; --line: #2a303a; --text: #eef1f5; --muted: #8f99a8; --accent: #5aa9ff; --ok: #3ccf91; --warn: #f2b84b; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.5 -apple-system, BlinkMacSystemFont, "PingFang SC", "Noto Sans CJK SC", sans-serif; }
+  main { max-width: 640px; margin: 0 auto; padding: max(20px, env(safe-area-inset-top)) 16px 24px; }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  #status { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 14px; margin-bottom: 16px; }
+  #dot { width: 10px; height: 10px; border-radius: 50%; background: var(--warn); flex: none; }
+  #dot.ok { background: var(--ok); }
+  textarea { width: 100%; min-height: 120px; resize: vertical; padding: 14px; border-radius: 14px; border: 1px solid var(--line); background: var(--card); color: var(--text); font: inherit; font-size: 18px; outline: none; }
+  textarea:focus { border-color: var(--accent); }
+  .row { display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
+  button { flex: 1; min-width: 96px; padding: 13px 10px; border-radius: 12px; border: 1px solid var(--line); background: var(--card); color: var(--text); font: inherit; font-weight: 600; }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #04121f; }
+  button:active { transform: scale(0.98); }
+  label { display: flex; align-items: center; gap: 8px; margin-top: 14px; color: var(--muted); font-size: 14px; }
+  #hint { margin-top: 18px; color: var(--muted); font-size: 13px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>电视键盘</h1>
+  <div id="status"><span id="dot"></span><span id="statusText">连接中…</span></div>
+  <textarea id="box" placeholder="在这里打字，内容会同步到电视上正在输入的框里" autocapitalize="off" autocomplete="off" autocorrect="off" spellcheck="false"></textarea>
+  <div class="row">
+    <button class="primary" id="enter">发送 / 搜索</button>
+    <button id="clear">清空</button>
+  </div>
+  <label><input type="checkbox" id="live" checked> 边打边同步（关掉则只在点「发送」时一次性填入）</label>
+  <div id="hint">先在电视上选中一个输入框，让电视键盘弹出来。打完点「发送 / 搜索」相当于电视键盘上的回车。可以把这个页面添加到主屏幕。</div>
+</main>
+<script>
+(function () {
+  'use strict';
+  var token = new URLSearchParams(location.search).get('t');
+  var box = document.getElementById('box'), live = document.getElementById('live');
+  var dot = document.getElementById('dot'), statusText = document.getElementById('statusText');
+  var composing = false, timer = null, sent = '', focusOnTv = false;
+  try { live.checked = localStorage.getItem('tvkb.live') !== '0'; } catch (e) {}
+  live.onchange = function () { try { localStorage.setItem('tvkb.live', live.checked ? '1' : '0'); } catch (e) {} };
+
+  function api(path, body) {
+    return fetch(path + '?t=' + encodeURIComponent(token), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body || {}) })
+      .then(function (r) { return r.json(); }).catch(function () { return { ok: false, error: 'network' }; });
+  }
+  // Only ever touch what this page put there: delete back to the common prefix, insert the rest.
+  var queue = Promise.resolve();
+  function sync(target) {
+    queue = queue.then(function () {
+      var i = 0; while (i < sent.length && i < target.length && sent[i] === target[i]) i++;
+      var del = sent.length - i, add = target.slice(i), steps = Promise.resolve();
+      if (del > 0) steps = steps.then(function () { return api('/api/delete', { count: del }); });
+      if (add) steps = steps.then(function () { return api('/api/insert', { text: add }); });
+      return steps.then(function (r) { if (!r || r.ok !== false) sent = target; else show(false, '发送失败：' + r.error); });
+    });
+    return queue;
+  }
+  function schedule() { if (!live.checked || composing) return; clearTimeout(timer); timer = setTimeout(function () { sync(box.value); }, 120); }
+  box.addEventListener('compositionstart', function () { composing = true; });
+  box.addEventListener('compositionend', function () { composing = false; schedule(); });
+  box.addEventListener('input', schedule);
+  box.addEventListener('keydown', function (e) { if (e.key === 'Enter' && !e.shiftKey && !composing) { e.preventDefault(); enter(); } });
+
+  function enter() {
+    clearTimeout(timer);
+    sync(box.value).then(function () { return api('/api/enter'); }).then(function () { box.value = ''; sent = ''; });
+  }
+  document.getElementById('enter').onclick = enter;
+  document.getElementById('clear').onclick = function () { box.value = ''; sync(''); box.focus(); };
+
+  function show(ok, text) { dot.classList.toggle('ok', ok); statusText.textContent = text; }
+  function render(s) {
+    if (s.pairing === 'prompting') show(false, '请在电视上同意「允许连接」');
+    else if (s.pairing !== 'ready') show(false, '电视连接中…' + (s.error ? '（' + s.error + '）' : ''));
+    else if (s.keyboard && s.keyboard.focus) show(true, '电视上的输入框已就绪');
+    else show(false, '已连接电视。在电视上选中一个输入框后即可打字');
+    var nowFocus = !!(s.keyboard && s.keyboard.focus);
+    if (nowFocus && !focusOnTv) { sent = ''; if (live.checked && box.value) sync(box.value); }
+    focusOnTv = nowFocus;
+  }
+  function listen() {
+    var es = new EventSource('/events?t=' + encodeURIComponent(token));
+    es.onmessage = function (e) { try { render(JSON.parse(e.data)); } catch (err) {} };
+    es.onerror = function () { show(false, '与电视的连接断开，重连中…'); };
+  }
+  listen();
+  box.focus();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,1 @@
+{"id":"com.lfkdsk.tvkeyboard.service","description":"LAN typing server for the TV keyboard","services":[{"name":"com.lfkdsk.tvkeyboard.service"}],"requiredACG":["activity.operation","network.query"]}

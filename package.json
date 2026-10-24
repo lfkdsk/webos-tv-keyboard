@@ -1,0 +1,8 @@
+{
+  "name": "webos-tv-keyboard",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Type into any LG webOS TV text field from a phone or computer browser",
+  "scripts": { "test": "node --test --test-timeout=20000 tests/" },
+  "license": "MIT"
+}

@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>电视键盘</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 1920px; height: 1080px; overflow: hidden; background: radial-gradient(circle at 30% 30%, #18243a 0%, #0b0e14 65%); color: #eef1f5; font-family: 'LG Smart UI', 'PingFang SC', 'Noto Sans CJK SC', sans-serif; }
+  main { display: flex; align-items: center; gap: 120px; padding: 0 160px; height: 100%; }
+  #qr { width: 520px; height: 520px; padding: 28px; border-radius: 36px; background: #fff; flex: none; display: flex; align-items: center; justify-content: center; }
+  #qr svg { width: 100%; height: 100%; }
+  h1 { font-size: 72px; font-weight: 600; letter-spacing: 0.02em; }
+  .lead { margin-top: 18px; font-size: 32px; color: #b7c0cc; line-height: 1.5; }
+  #url { margin-top: 36px; font-size: 30px; color: #9fd0ff; letter-spacing: 0.02em; word-break: break-all; }
+  #status { margin-top: 28px; display: flex; align-items: center; gap: 16px; font-size: 28px; color: #c8d0da; }
+  #dot { width: 18px; height: 18px; border-radius: 50%; background: #f2b84b; flex: none; }
+  #dot.ok { background: #3ccf91; }
+  ol { margin-top: 40px; padding-left: 40px; font-size: 26px; color: #8f99a8; line-height: 1.8; }
+  #toast { margin-top: 32px; font-size: 24px; color: #8f99a8; }
+  #toast b { color: #eef1f5; }
+</style>
+</head>
+<body>
+<main>
+  <div id="qr"></div>
+  <div>
+    <h1>电视键盘</h1>
+    <div class="lead">用手机或电脑打字，直接输入到电视上任意 App 的输入框。</div>
+    <div id="url">正在启动…</div>
+    <div id="status"><span id="dot"></span><span id="statusText">连接中…</span></div>
+    <ol>
+      <li>手机扫码，或在电脑浏览器打开上面的地址（建议加入书签）。</li>
+      <li>在电视上选中一个输入框，让电视键盘弹出来。</li>
+      <li>在手机上打字，点「发送 / 搜索」相当于回车。</li>
+    </ol>
+    <div id="toast">弹出键盘时提示地址：<b id="toastState">开</b>（按 OK 切换） · 返回键退出</div>
+  </div>
+</main>
+<script src="app.js"></script>
+</body>
+</html>
