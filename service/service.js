@@ -55,9 +55,6 @@ server.on('error', (e) => { listenError = String(e.code || e.message); });
 server.listen(PORT, '0.0.0.0', () => { listening = true; });
 // ssap.start() runs once the LAN address is known (refreshAddress); start() is idempotent.
 
-function readSettings() { try { return Object.assign({ toast: true }, JSON.parse(fs.readFileSync(path.join(STATE, 'settings.json'), 'utf8'))); } catch (e) { return { toast: true }; } }
-function writeSettings(s) { fs.writeFileSync(path.join(STATE, 'settings.json'), JSON.stringify(s), { mode: 0o600 }); }
-
 // Hold an activity forever so webos-service does not exit this process when idle.
 service.activityManager.create('keep-typing-server', () => {});
 
@@ -70,15 +67,9 @@ service.register('state', (m) => {
   const url = ip ? 'http://' + ip + ':' + PORT + '/?t=' + TOKEN : null;
   let svg = null;
   if (url && fromApp(m)) { const qr = qrcode(0, 'M'); qr.addData(url); qr.make(); svg = qr.createSvgTag({ cellSize: 8, margin: 2, scalable: true }); }
-  m.respond(Object.assign({ returnValue: true, listening, listenError, url: fromApp(m) ? url : null, qr: svg, settings: readSettings() }, snapshot()));
+  m.respond(Object.assign({ returnValue: true, listening, listenError, url: fromApp(m) ? url : null, qr: svg }, snapshot()));
 });
-service.register('settings', (m) => {
-  if (!fromApp(m)) { m.respond({ returnValue: false, errorText: 'caller-not-authorized' }); return; }
-  const s = readSettings();
-  if (typeof (m.payload || {}).toast === 'boolean') s.toast = m.payload.toast;
-  writeSettings(s);
-  m.respond({ returnValue: true, settings: s });
-});
+
 // Called by the boot activity; starting the service is the point, nothing else to do.
 service.register('tick', (m) => {
   if (m.activity) service.activityManager.complete(m.activity, { restart: true }, () => m.respond({ returnValue: true }));
