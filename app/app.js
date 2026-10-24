@@ -1,7 +1,7 @@
 (function () {
   'use strict';
   var SERVICE = 'luna://com.lfkdsk.tvkeyboard.service/';
-  var dot = document.getElementById('dot'), statusText = document.getElementById('statusText'), lastQr = null;
+  var dot = document.getElementById('dot'), statusText = document.getElementById('statusText'), lastQr = null, lastQrIp = null;
   function call(method, params, cb) {
     try {
       var b = new PalmServiceBridge();
@@ -14,7 +14,9 @@
     // Only touch the QR when it changes, so the 2 s refresh does not redraw it.
     if (r.qr && r.qr !== lastQr) { lastQr = r.qr; document.getElementById('qr').innerHTML = r.qr; }
     document.getElementById('url').textContent = r.url || (r.listenError ? '端口被占用：' + r.listenError : '没有找到电视的局域网地址');
-    document.getElementById('ipUrl').textContent = r.ipUrl && r.ipUrl !== r.url ? '打不开时用 IP 地址：' + r.ipUrl : '';
+    document.getElementById('ipUrl').textContent = r.ipUrl && r.ipUrl !== r.url ? r.ipUrl : '';
+    if (r.qrIp && r.qrIp !== lastQrIp) { lastQrIp = r.qrIp; document.getElementById('qrIp').innerHTML = r.qrIp; }
+    document.getElementById('alt').style.display = r.qrIp ? '' : 'none';
     var ok = false, text;
     if (r.pairing === 'prompting') text = '请在电视弹出的提示里选择「允许」';
     else if (r.pairing !== 'ready') text = '正在连接电视的输入接口…' + (r.error ? '（' + r.error + '）' : '');

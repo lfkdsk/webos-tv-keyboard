@@ -71,10 +71,10 @@ service.register('state', (m) => {
   const tail = ':' + PORT + '/?t=' + TOKEN;
   const url = mdns ? 'http://' + mdns + tail : ip ? 'http://' + ip + tail : null;
   const ipUrl = ip ? 'http://' + ip + tail : null;
-  let svg = null;
-  if (url && fromApp(m)) { const qr = qrcode(0, 'M'); qr.addData(url); qr.make(); svg = qr.createSvgTag({ cellSize: 8, margin: 2, scalable: true }); }
   const own = fromApp(m);
-  m.respond(Object.assign({ returnValue: true, listening, listenError, url: own ? url : null, ipUrl: own ? ipUrl : null, qr: svg }, snapshot()));
+  const svgFor = (u) => { if (!u || !own) return null; const qr = qrcode(0, 'M'); qr.addData(u); qr.make(); return qr.createSvgTag({ cellSize: 8, margin: 2, scalable: true }); };
+  // Two codes: the .local one is the address to keep; the IP one works on phones without mDNS.
+  m.respond(Object.assign({ returnValue: true, listening, listenError, url: own ? url : null, ipUrl: own ? ipUrl : null, qr: svgFor(url), qrIp: ipUrl !== url ? svgFor(ipUrl) : null }, snapshot()));
 });
 
 // Called by the boot activity; starting the service is the point, nothing else to do.

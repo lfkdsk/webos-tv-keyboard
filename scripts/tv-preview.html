@@ -7,12 +7,12 @@
 <script>
   var f = document.getElementById('f');
   f.addEventListener('load', function () {
-    var w = f.contentWindow, url = 'http://10.0.0.61:7788/?t=Xy12abCDefGH';
-    var qr = qrcode(0, 'M'); qr.addData(url); qr.make();
-    var svg = qr.createSvgTag({cellSize: 8, margin: 2, scalable: true});
+    var w = f.contentWindow, url = 'http://lgwebostv.local:7788/?t=Xy12abCDefGH', ipUrl = 'http://10.0.0.61:7788/?t=Xy12abCDefGH';
+    var mk = function (u) { var qr = qrcode(0, 'M'); qr.addData(u); qr.make(); return qr.createSvgTag({cellSize: 8, margin: 2, scalable: true}); };
+    var svg = mk(url), svgIp = mk(ipUrl);
     w.PalmServiceBridge = function () {};
     w.PalmServiceBridge.prototype.cancel = function () {};
-    w.PalmServiceBridge.prototype.call = function () { var self = this; setTimeout(function () { self.onservicecallback(JSON.stringify({returnValue: true, listening: true, url: url, qr: svg, pairing: 'ready'})); }, 50); };
+    w.PalmServiceBridge.prototype.call = function () { var self = this; setTimeout(function () { self.onservicecallback(JSON.stringify({returnValue: true, listening: true, url: url, ipUrl: ipUrl, qr: svg, qrIp: svgIp, pairing: 'ready'})); }, 50); };
     w.location.reload = function () {};
     var s = w.document.createElement('script'); s.src = 'app.js'; w.document.body.appendChild(s);
   });
