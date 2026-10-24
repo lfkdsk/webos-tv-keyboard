@@ -66,6 +66,31 @@ const FOCUS_JS = `(() => {
   return { editable: true, value: el.isContentEditable ? el.textContent : el.value, placeholder: el.placeholder || '' };
 })()`;
 
+// Empty the focused field entirely, including text that was there before we typed.
+// execCommand('delete') goes through the editing pipeline, so frameworks that listen to
+// input events (React, Enact) see the change; the value setter is a fallback.
+const CLEAR_JS = `(() => {
+  const el = document.activeElement;
+  if (!el) return { cleared: false };
+  if (el.isContentEditable) {
+    const r = document.createRange(); r.selectNodeContents(el);
+    const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r);
+    document.execCommand('delete');
+    return { cleared: el.textContent === '', value: el.textContent };
+  }
+  if (el.value) {
+    try { el.setSelectionRange(0, el.value.length); } catch (e) { el.select && el.select(); }
+    document.execCommand('delete');
+  }
+  if (el.value) {
+    const proto = el.tagName === 'TEXTAREA' ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype;
+    Object.getOwnPropertyDescriptor(proto, 'value').set.call(el, '');
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+    el.dispatchEvent(new Event('change', { bubbles: true }));
+  }
+  return { cleared: el.value === '', value: el.value };
+})()`;
+
 async function evaluate(send, expression) {
   const r = await send('Runtime.evaluate', { expression, returnByValue: true });
   return r.result && r.result.value;
@@ -103,6 +128,15 @@ function createInjector(getForeground) {
         if (!f || !f.editable) throw new Error('no-text-field');
         await send('Input.insertText', { text });
         return { value: await evaluate(send, FOCUS_JS.replace('if (el) el.focus();', '')).then((v) => v && v.value) };
+      });
+    },
+    clearField() {
+      return withPage(async (send) => {
+        const f = await evaluate(send, FOCUS_JS);
+        if (!f || !f.editable) throw new Error('no-text-field');
+        const r = await evaluate(send, CLEAR_JS);
+        if (!r || !r.cleared) throw new Error('clear-failed');
+        return { value: '' };
       });
     },
     deleteChars(count) {

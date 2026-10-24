@@ -16,6 +16,7 @@ const injector = {
   status: async () => apps[i],
   insert: async (t) => { if (!apps[i].supported) { const e = new Error('app-not-supported'); throw e; } field += t; console.log('field:', field); return { value: field }; },
   deleteChars: async (n) => { field = Array.from(field).slice(0, -n || undefined).join(''); console.log('field:', field); return {}; },
+  clearField: async () => { field = ''; console.log('field cleared'); return { value: '' }; },
   enter: async () => { console.log('ENTER with', field); field = ''; return {}; },
 };
 const ssap = Object.assign(new EventEmitter(), { state: 'ready' });

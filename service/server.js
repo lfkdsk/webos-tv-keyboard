@@ -13,6 +13,7 @@ const MESSAGES = {
   'devtools-unavailable': '电视的调试入口不可用（开发者模式是否已开启？）',
   'no-foreground-app': '没有获取到电视当前的应用',
   'not-ready': '正在连接电视，请稍候',
+  'clear-failed': '没能清空电视上的输入框',
 };
 
 function createServer(opts) {
@@ -79,6 +80,7 @@ function createServer(opts) {
     if (url.pathname === '/api/insert') return run(res, () => injector.insert(text));
     if (url.pathname === '/api/delete') return run(res, () => injector.deleteChars(Math.max(0, Math.min(2000, body.count | 0))));
     if (url.pathname === '/api/enter') return run(res, () => injector.enter());
+    if (url.pathname === '/api/clear') return run(res, () => injector.clearField());
     send(res, 404, { ok: false });
   });
   return { server, snapshot };

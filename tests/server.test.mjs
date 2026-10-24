@@ -14,6 +14,7 @@ test('token gate, typing endpoints, errors and status events', async () => {
     insert: async (t) => { calls.push(['insert', t]); if (!supported) { const e = new Error('app-not-supported'); e.appId = 'netflix'; throw e; } return { value: t }; },
     deleteChars: async (n) => { calls.push(['delete', n]); return {}; },
     enter: async () => { calls.push(['enter']); return {}; },
+    clearField: async () => { calls.push(['clear']); return { value: '' }; },
   };
   const ssap = Object.assign(new EventEmitter(), { state: 'ready' });
   const { server } = createServer({ token: 'tok', injector, ssap });
@@ -26,7 +27,8 @@ test('token gate, typing endpoints, errors and status events', async () => {
   assert.equal((await post('/api/insert', { text: '蝴蝶君' })).value, '蝴蝶君');
   await post('/api/delete', { count: 2 });
   await post('/api/enter', {});
-  assert.deepEqual(calls, [['insert', '蝴蝶君'], ['delete', 2], ['enter']]);
+  assert.equal((await post('/api/clear', {})).ok, true);
+  assert.deepEqual(calls, [['insert', '蝴蝶君'], ['delete', 2], ['enter'], ['clear']]);
   supported = false;
   const err = await post('/api/insert', { text: 'x' });
   assert.equal(err.ok, false);
