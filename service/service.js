@@ -9,6 +9,7 @@ const crypto = require('crypto');
 const Service = require('webos-service');
 const { Ssap } = require('./ssap');
 const { createServer } = require('./server');
+const { createInjector } = require('./inject');
 const qrcode = require('./qrcode');
 
 const ID = require('./package.json').name;
@@ -46,18 +47,9 @@ const TOKEN = token();
 refreshAddress();
 setInterval(refreshAddress, 30000);
 const ssap = new Ssap(path.join(STATE, 'ssap-key.json'), () => lanIp || '127.0.0.1');
-let lastToast = 0;
-const { server, snapshot } = createServer({
-  token: TOKEN,
-  ssap,
-  // A short reminder on screen when a keyboard opens, at most every 10 minutes.
-  onKeyboard: (kb) => {
-    if (!kb.focus || Date.now() - lastToast < 600000 || !readSettings().toast) return;
-    lastToast = Date.now();
-    const ip = lanAddress();
-    if (ip) ssap.call('ssap://system.notifications/createToast', { message: '手机或电脑打开 http://' + ip + ':' + PORT + ' 打字（首次请在「电视键盘」里扫码）' }).catch(() => {});
-  },
-});
+// Foreground app via SSAP (READ_APP_STATUS works for unsigned clients, unlike the IME methods).
+const injector = createInjector(() => ssap.call('ssap://com.webos.applicationManager/getForegroundAppInfo').then((r) => r.appId || null));
+const { server, snapshot } = createServer({ token: TOKEN, ssap, injector });
 let listening = false, listenError = null;
 server.on('error', (e) => { listenError = String(e.code || e.message); });
 server.listen(PORT, '0.0.0.0', () => { listening = true; });

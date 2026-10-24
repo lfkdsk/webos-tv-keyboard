@@ -9,7 +9,8 @@ const { WsClient } = require('./ws-client');
 
 // Unsigned manifest on purpose: newer firmware rejects the signed one that open-source clients
 // share ("blacklisted certificate") but still accepts an unsigned one after the user approves it.
-const PERMISSIONS = ['CONTROL_INPUT_TEXT', 'WRITE_NOTIFICATION_TOAST', 'READ_APP_STATUS', 'READ_INSTALLED_APPS'];
+// getForegroundAppInfo needs READ_RUNNING_APPS; READ_APP_STATUS alone answers 401.
+const PERMISSIONS = ['READ_RUNNING_APPS', 'READ_APP_STATUS', 'READ_INSTALLED_APPS', 'WRITE_NOTIFICATION_TOAST', 'CONTROL_INPUT_TEXT'];
 
 class Ssap extends EventEmitter {
   constructor(keyFile, hostFn) {

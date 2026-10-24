@@ -15,18 +15,15 @@
     if (r.qr) document.getElementById('qr').innerHTML = r.qr;
     document.getElementById('url').textContent = r.url || (r.listenError ? '端口被占用：' + r.listenError : '没有找到电视的局域网地址');
     settings = r.settings || settings;
-    document.getElementById('toastState').textContent = settings.toast ? '开' : '关';
     var ok = false, text;
     if (r.pairing === 'prompting') text = '请在电视弹出的提示里选择「允许」';
     else if (r.pairing !== 'ready') text = '正在连接电视的输入接口…' + (r.error ? '（' + r.error + '）' : '');
-    else if (r.keyboard && r.keyboard.focus) { ok = true; text = '电视键盘已弹出，可以在手机上打字'; }
-    else { ok = true; text = '已就绪。在任意 App 里选中输入框即可'; }
+    else { ok = true; text = '已就绪。打开支持的 App，用手机打字即可'; }
     dot.classList.toggle('ok', ok); statusText.textContent = text;
   }
   function refresh() { call('state', {}, render); }
   document.addEventListener('keydown', function (e) {
-    if (e.keyCode === 13) { call('settings', {toast: !settings.toast}, function () { refresh(); }); e.preventDefault(); }
-    else if (e.keyCode === 461 || e.keyCode === 27) { e.preventDefault(); try { if (window.webOS && webOS.platformBack) webOS.platformBack(); else window.close(); } catch (err) { window.close(); } }
+    if (e.keyCode === 461 || e.keyCode === 27) { e.preventDefault(); try { if (window.webOS && webOS.platformBack) webOS.platformBack(); else window.close(); } catch (err) { window.close(); } }
   });
   refresh(); setInterval(refresh, 2000);
 })();

@@ -1,34 +1,41 @@
 'use strict';
 // LAN web server: serves the typing page to a phone or computer and forwards what is typed
-// to the TV's focused text field through SSAP. Every request needs the token from the QR
-// code, so other devices on the network cannot type into the TV.
+// to the text field of the TV's foreground app (see inject.js). Every request needs the token
+// from the QR code, so other devices on the network cannot type into the TV.
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
 
 const PAGE = fs.readFileSync(path.join(__dirname, 'page.html'), 'utf8');
-const IME = 'ssap://com.webos.service.ime/';
+const MESSAGES = {
+  'app-not-supported': '当前 App 不支持远程输入（只支持开发者模式侧载的应用）',
+  'no-text-field': '当前页面没有输入框，请先在电视上选中搜索框',
+  'devtools-unavailable': '电视的调试入口不可用（开发者模式是否已开启？）',
+  'no-foreground-app': '没有获取到电视当前的应用',
+  'not-ready': '正在连接电视，请稍候',
+};
 
 function createServer(opts) {
-  const { token, ssap } = opts;
+  const { token, injector, ssap } = opts;
   const clients = new Set();
-  let keyboard = { focus: false };
+  let state = { appId: null, supported: false };
+  let polling = null;
 
   function snapshot() {
-    return { keyboard, pairing: ssap.state, error: ssap.lastError || null };
+    return Object.assign({ pairing: ssap ? ssap.state : 'ready' }, state);
   }
   function broadcast() {
     const line = 'data: ' + JSON.stringify(snapshot()) + '\n\n';
     for (const res of clients) res.write(line);
   }
-  ssap.on('state', broadcast);
-  // currentWidget.focus is true while a text field on the TV has the system keyboard up.
-  ssap.subscribe('kb', IME + 'registerRemoteKeyboard', (p) => {
-    const w = p.currentWidget || {};
-    keyboard = { focus: !!w.focus, contentType: w.contentType || null, hiddenText: !!w.hiddenText };
+  // Only poll the TV while someone has the page open.
+  async function poll() {
+    try { state = await injector.status(); } catch (e) { state = { appId: null, supported: false, reason: String(e.message || e) }; }
     broadcast();
-    if (opts.onKeyboard) opts.onKeyboard(keyboard);
-  });
+  }
+  function startPolling() { if (!polling) { poll(); polling = setInterval(poll, 2000); } }
+  function stopPolling() { if (polling && clients.size === 0) { clearInterval(polling); polling = null; } }
+  if (ssap) ssap.on('state', broadcast);
 
   function send(res, code, body, type) {
     res.writeHead(code, { 'Content-Type': type || 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
@@ -41,8 +48,13 @@ function createServer(opts) {
       req.on('end', () => { try { resolve(JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}')); } catch (e) { resolve({}); } });
     });
   }
-  async function forward(res, uri, payload) {
-    try { send(res, 200, Object.assign({ ok: true }, await ssap.call(uri, payload))); } catch (e) { send(res, 503, { ok: false, error: String(e.message || e) }); }
+  async function run(res, fn) {
+    try {
+      send(res, 200, Object.assign({ ok: true }, await fn()));
+    } catch (e) {
+      const code = String(e.message || e);
+      send(res, 409, { ok: false, error: code, message: MESSAGES[code] || code, appId: e.appId || null });
+    }
   }
 
   const server = http.createServer(async (req, res) => {
@@ -56,19 +68,20 @@ function createServer(opts) {
       res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-store', Connection: 'keep-alive' });
       res.write('data: ' + JSON.stringify(snapshot()) + '\n\n');
       clients.add(res);
+      startPolling();
       const ping = setInterval(() => res.write(': ping\n\n'), 20000);
-      req.on('close', () => { clearInterval(ping); clients.delete(res); });
+      req.on('close', () => { clearInterval(ping); clients.delete(res); stopPolling(); });
       return;
     }
     if (req.method !== 'POST') { send(res, 404, { ok: false }); return; }
     const body = await readJson(req);
     const text = typeof body.text === 'string' ? body.text.slice(0, 2000) : '';
-    if (url.pathname === '/api/insert') return forward(res, IME + 'insertText', { text, replace: body.replace ? 1 : 0 });
-    if (url.pathname === '/api/delete') return forward(res, IME + 'deleteCharacters', { count: Math.max(0, Math.min(2000, body.count | 0)) });
-    if (url.pathname === '/api/enter') return forward(res, IME + 'sendEnterKey', {});
+    if (url.pathname === '/api/insert') return run(res, () => injector.insert(text));
+    if (url.pathname === '/api/delete') return run(res, () => injector.deleteChars(Math.max(0, Math.min(2000, body.count | 0))));
+    if (url.pathname === '/api/enter') return run(res, () => injector.enter());
     send(res, 404, { ok: false });
   });
   return { server, snapshot };
 }
 
-module.exports = { createServer };
+module.exports = { createServer, MESSAGES };

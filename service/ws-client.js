@@ -1,8 +1,9 @@
 'use strict';
 // Minimal WebSocket client (RFC 6455: text/binary frames, ping/pong, close), no dependencies.
-// The TV's Node 20 has no WebSocket client; the SSAP endpoint on the TV is wss with LG's own
-// certificate, so the caller passes TLS options (rejectUnauthorized) through.
+// The TV's Node 20 has no WebSocket client. Used for the SSAP endpoint (wss, LG's own
+// certificate, so TLS options pass through) and the local DevTools endpoint (plain ws).
 const https = require('https');
+const http = require('http');
 const crypto = require('crypto');
 const { EventEmitter } = require('events');
 
@@ -19,9 +20,10 @@ class WsClient extends EventEmitter {
 
   connect(timeoutMs = 10000) {
     const key = crypto.randomBytes(16).toString('base64');
-    const req = https.request(Object.assign({
+    const secure = this.url.protocol === 'wss:';
+    const req = (secure ? https : http).request(Object.assign({
       hostname: this.url.hostname,
-      port: this.url.port || 443,
+      port: this.url.port || (secure ? 443 : 80),
       path: this.url.pathname + this.url.search,
       headers: {
         Connection: 'Upgrade',

@@ -34,7 +34,7 @@
     <button id="clear">清空</button>
   </div>
   <label><input type="checkbox" id="live" checked> 边打边同步（关掉则只在点「发送」时一次性填入）</label>
-  <div id="hint">先在电视上选中一个输入框，让电视键盘弹出来。打完点「发送 / 搜索」相当于电视键盘上的回车。可以把这个页面添加到主屏幕。</div>
+  <div id="hint">支持开发者模式侧载的应用（Moonfin、海外哔哩、BiliTV、启动器等），LG 商店应用不支持。打完点「发送 / 搜索」相当于回车。可以把这个页面添加到主屏幕。</div>
 </main>
 <script>
 (function () {
@@ -42,7 +42,7 @@
   var token = new URLSearchParams(location.search).get('t');
   var box = document.getElementById('box'), live = document.getElementById('live');
   var dot = document.getElementById('dot'), statusText = document.getElementById('statusText');
-  var composing = false, timer = null, sent = '', focusOnTv = false;
+  var composing = false, timer = null, sent = '';
   try { live.checked = localStorage.getItem('tvkb.live') !== '0'; } catch (e) {}
   live.onchange = function () { try { localStorage.setItem('tvkb.live', live.checked ? '1' : '0'); } catch (e) {} };
 
@@ -58,7 +58,7 @@
       var del = sent.length - i, add = target.slice(i), steps = Promise.resolve();
       if (del > 0) steps = steps.then(function () { return api('/api/delete', { count: del }); });
       if (add) steps = steps.then(function () { return api('/api/insert', { text: add }); });
-      return steps.then(function (r) { if (!r || r.ok !== false) sent = target; else show(false, '发送失败：' + r.error); });
+      return steps.then(function (r) { if (!r || r.ok !== false) sent = target; else show(false, r.message || ('发送失败：' + r.error)); });
     });
     return queue;
   }
@@ -70,20 +70,23 @@
 
   function enter() {
     clearTimeout(timer);
-    sync(box.value).then(function () { return api('/api/enter'); }).then(function () { box.value = ''; sent = ''; });
+    sync(box.value).then(function () { return api('/api/enter'); }).then(function (r) { if (r && r.ok === false) { show(false, r.message || r.error); return; } box.value = ''; sent = ''; });
   }
   document.getElementById('enter').onclick = enter;
   document.getElementById('clear').onclick = function () { box.value = ''; sync(''); box.focus(); };
 
   function show(ok, text) { dot.classList.toggle('ok', ok); statusText.textContent = text; }
+  var NAMES = { 'org.moonfin.webos': 'Moonfin', 'com.lfkdsk.overseabili': '海外哔哩', 'com.biliwebos.app': 'BiliTV', 'com.gathin.tvhome': '启动器', 'youtube.leanback.v4': 'YouTube', 'netflix': 'Netflix', 'com.emby.app': 'Emby' };
+  var lastApp = null;
   function render(s) {
+    var name = s.appId ? (NAMES[s.appId] || s.appId) : '未知';
     if (s.pairing === 'prompting') show(false, '请在电视上同意「允许连接」');
-    else if (s.pairing !== 'ready') show(false, '电视连接中…' + (s.error ? '（' + s.error + '）' : ''));
-    else if (s.keyboard && s.keyboard.focus) show(true, '电视上的输入框已就绪');
-    else show(false, '已连接电视。在电视上选中一个输入框后即可打字');
-    var nowFocus = !!(s.keyboard && s.keyboard.focus);
-    if (nowFocus && !focusOnTv) { sent = ''; if (live.checked && box.value) sync(box.value); }
-    focusOnTv = nowFocus;
+    else if (s.pairing !== 'ready') show(false, '电视连接中…');
+    else if (!s.supported) show(false, '当前：' + name + '，不支持远程输入（只支持侧载应用）');
+    else if (s.focusedEditable) show(true, '当前：' + name + '，输入框已选中，可以打字');
+    else show(true, '当前：' + name + '。打字时会自动选中页面上的输入框');
+    // Switching apps starts a fresh field: forget what was sent to the previous one.
+    if (s.appId !== lastApp) { sent = ''; lastApp = s.appId; }
   }
   function listen() {
     var es = new EventSource('/events?t=' + encodeURIComponent(token));
