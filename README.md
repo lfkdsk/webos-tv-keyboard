@@ -32,6 +32,7 @@ service/   电视端 JS 服务（常驻，开机后由定时 activity 拉起）
   page.html   手机/电脑上的输入页
   qrcode.js   qrcode-generator（MIT，Kazuhiko Arase）
 tests/     node --test
+scripts/   preview.mjs（手机页本地预览，假电视）、tv-preview.html（电视页本地预览）
 ```
 
 安全：输入页和接口都要带二维码里的随机 token；局域网里的其他设备拿不到 token 就无法打字。token 存在服务目录里，重新安装会更换。

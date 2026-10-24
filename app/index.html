@@ -4,37 +4,67 @@
 <meta charset="utf-8">
 <title>电视键盘</title>
 <style>
+  /* webOS renders web apps at 1920x1080; sizes are CSS px at that resolution. */
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  html, body { width: 1920px; height: 1080px; overflow: hidden; background: radial-gradient(circle at 30% 30%, #18243a 0%, #0b0e14 65%); color: #eef1f5; font-family: 'LG Smart UI', 'PingFang SC', 'Noto Sans CJK SC', sans-serif; }
-  main { display: flex; align-items: center; gap: 120px; padding: 0 160px; height: 100%; }
-  #qr { width: 520px; height: 520px; padding: 28px; border-radius: 36px; background: #fff; flex: none; display: flex; align-items: center; justify-content: center; }
+  html, body { width: 1920px; height: 1080px; overflow: hidden; color: #eef2f8; font-family: 'LG Smart UI', 'PingFang SC', 'Noto Sans CJK SC', sans-serif; background: #070a10; }
+  .bg { position: absolute; inset: 0; background:
+      radial-gradient(900px 700px at 18% 30%, rgba(61, 123, 255, 0.28), transparent 70%),
+      radial-gradient(800px 600px at 85% 85%, rgba(122, 76, 255, 0.18), transparent 70%),
+      linear-gradient(180deg, #0a0f1a 0%, #06080d 100%); }
+  main { position: relative; display: grid; grid-template-columns: 600px 1fr; gap: 110px; align-items: center; height: 100%; padding: 0 150px; }
+
+  .qr-card { position: relative; width: 600px; padding: 34px; border-radius: 44px; background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.12); box-shadow: 0 40px 120px rgba(0, 0, 0, 0.45); }
+  #qr { width: 532px; height: 532px; border-radius: 28px; background: #fff; padding: 26px; display: flex; align-items: center; justify-content: center; }
   #qr svg { width: 100%; height: 100%; }
-  h1 { font-size: 72px; font-weight: 600; letter-spacing: 0.02em; }
-  .lead { margin-top: 18px; font-size: 32px; color: #b7c0cc; line-height: 1.5; }
-  #url { margin-top: 36px; font-size: 30px; color: #9fd0ff; letter-spacing: 0.02em; word-break: break-all; }
-  #status { margin-top: 28px; display: flex; align-items: center; gap: 16px; font-size: 28px; color: #c8d0da; }
-  #dot { width: 18px; height: 18px; border-radius: 50%; background: #f2b84b; flex: none; }
-  #dot.ok { background: #3ccf91; }
-  ol { margin-top: 40px; padding-left: 40px; font-size: 26px; color: #8f99a8; line-height: 1.8; }
-  #toast { margin-top: 32px; font-size: 24px; color: #8f99a8; }
-  #toast b { color: #eef1f5; }
+  #qr .placeholder { color: #5d6b82; font-size: 28px; }
+  .scan { display: flex; align-items: center; justify-content: center; gap: 14px; margin-top: 26px; font-size: 28px; color: #b9c4d6; }
+  .scan svg { width: 34px; height: 34px; fill: #8fb4ff; }
+
+  .brand { display: flex; align-items: center; gap: 22px; }
+  .logo { width: 84px; height: 84px; border-radius: 24px; background: linear-gradient(160deg, #3d7bff, #1b3f99); display: grid; place-items: center; box-shadow: 0 16px 40px rgba(61, 123, 255, 0.35); }
+  .logo svg { width: 50px; height: 50px; fill: #fff; }
+  h1 { font-size: 76px; font-weight: 600; letter-spacing: 0.02em; }
+  .lead { margin-top: 22px; font-size: 32px; line-height: 1.5; color: #b9c4d6; max-width: 900px; }
+
+  .url { display: inline-flex; align-items: center; gap: 16px; margin-top: 36px; padding: 16px 28px; border-radius: 999px; background: rgba(143, 180, 255, 0.12); border: 1px solid rgba(143, 180, 255, 0.28); font-size: 30px; color: #cfe0ff; letter-spacing: 0.01em; max-width: 1000px; }
+  .url svg { width: 30px; height: 30px; fill: #8fb4ff; flex: none; }
+  #url { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  .status { display: flex; align-items: center; gap: 16px; margin-top: 30px; font-size: 28px; color: #dbe4f2; }
+  .dot { width: 18px; height: 18px; border-radius: 50%; background: #f0b34a; box-shadow: 0 0 0 6px rgba(240, 179, 74, 0.15); flex: none; }
+  .dot.ok { background: #35c98b; box-shadow: 0 0 0 6px rgba(53, 201, 139, 0.15); }
+
+  .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; margin-top: 48px; max-width: 1000px; }
+  .step { padding: 26px 26px 28px; border-radius: 26px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.09); }
+  .step b { display: inline-grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; background: rgba(143, 180, 255, 0.16); color: #cfe0ff; font-size: 24px; margin-bottom: 16px; }
+  .step div { font-size: 25px; line-height: 1.45; color: #c7d1e0; }
+
+  .foot { margin-top: 40px; font-size: 22px; color: #7f8ba0; line-height: 1.6; max-width: 1000px; }
+  .foot kbd { font-family: inherit; padding: 2px 12px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.2); color: #c7d1e0; }
 </style>
 </head>
 <body>
+<div class="bg"></div>
 <main>
-  <div id="qr"></div>
-  <div>
-    <h1>电视键盘</h1>
-    <div class="lead">用手机或电脑打字，直接输入到电视上侧载应用（Moonfin、海外哔哩等）的输入框。</div>
-    <div id="url">正在启动…</div>
-    <div id="status"><span id="dot"></span><span id="statusText">连接中…</span></div>
-    <ol>
-      <li>手机扫码，或在电脑浏览器打开上面的地址（建议加入书签）。</li>
-      <li>在电视上打开要搜索的 App，进到搜索页。</li>
-      <li>在手机上打字，点「发送 / 搜索」相当于回车。</li>
-    </ol>
-    <div id="toast">返回键退出。关掉这个页面后，手机上的输入页依然可用。</div>
-  </div>
+  <section class="qr-card">
+    <div id="qr"><span class="placeholder">正在生成二维码…</span></div>
+    <div class="scan"><svg viewBox="0 0 24 24"><path d="M4 4h6v2H6v4H4V4Zm10 0h6v6h-2V6h-4V4ZM4 14h2v4h4v2H4v-6Zm14 0h2v6h-6v-2h4v-4ZM8 8h3v3H8V8Zm5 0h3v3h-3V8Zm-5 5h3v3H8v-3Zm5 0h3v3h-3v-3Z"/></svg>用手机相机扫码</div>
+  </section>
+  <section>
+    <div class="brand">
+      <span class="logo"><svg viewBox="0 0 24 24"><path d="M3 6.5A2.5 2.5 0 0 1 5.5 4h13A2.5 2.5 0 0 1 21 6.5v8a2.5 2.5 0 0 1-2.5 2.5H14l1 2h1a1 1 0 1 1 0 2H8a1 1 0 1 1 0-2h1l1-2H5.5A2.5 2.5 0 0 1 3 14.5v-8Zm4 2a1 1 0 1 0 0 2h.01a1 1 0 1 0 0-2H7Zm3.5 0a1 1 0 1 0 0 2h.01a1 1 0 1 0 0-2h-.01Zm3.5 0a1 1 0 1 0 0 2h.01a1 1 0 1 0 0-2H14Zm3.5 0a1 1 0 1 0 0 2h.01a1 1 0 1 0 0-2h-.01ZM8 12a1 1 0 1 0 0 2h8a1 1 0 1 0 0-2H8Z"/></svg></span>
+      <h1>电视键盘</h1>
+    </div>
+    <div class="lead">用手机或电脑打字，直接填进电视上的搜索框。中文、拼音、语音输入都可以。</div>
+    <div class="url"><svg viewBox="0 0 24 24"><path d="M10.6 13.4a1 1 0 0 1 0-1.4l3.5-3.5a3 3 0 1 1 4.24 4.24l-1.77 1.77a1 1 0 1 1-1.41-1.41l1.77-1.77a1 1 0 0 0-1.42-1.42L12 13.4a1 1 0 0 1-1.4 0Zm2.8-2.8a1 1 0 0 1 0 1.4l-3.5 3.5a3 3 0 1 1-4.24-4.24l1.77-1.77a1 1 0 1 1 1.41 1.41l-1.77 1.77a1 1 0 0 0 1.42 1.42L12 10.6a1 1 0 0 1 1.4 0Z"/></svg><span id="url">正在启动…</span></div>
+    <div class="status"><span class="dot" id="dot"></span><span id="statusText">正在连接…</span></div>
+    <div class="steps">
+      <div class="step"><b>1</b><div>扫码或在电脑浏览器打开地址，建议加到主屏幕</div></div>
+      <div class="step"><b>2</b><div>在电视上打开 Moonfin、海外哔哩等，进到搜索页</div></div>
+      <div class="step"><b>3</b><div>手机上打字，点「搜索」相当于回车</div></div>
+    </div>
+    <div class="foot">支持开发者模式侧载的应用；LG 商店应用不支持。按 <kbd>返回</kbd> 退出，关掉这个页面后手机输入页依然可用。</div>
+  </section>
 </main>
 <script src="app.js"></script>
 </body>

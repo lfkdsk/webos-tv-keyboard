@@ -1,7 +1,7 @@
 (function () {
   'use strict';
   var SERVICE = 'luna://com.lfkdsk.tvkeyboard.service/';
-  var dot = document.getElementById('dot'), statusText = document.getElementById('statusText');
+  var dot = document.getElementById('dot'), statusText = document.getElementById('statusText'), lastQr = null;
   function call(method, params, cb) {
     try {
       var b = new PalmServiceBridge();
@@ -11,12 +11,13 @@
   }
   function render(r) {
     if (!r || r.returnValue !== true) { statusText.textContent = '服务没有响应，请重新安装应用。'; return; }
-    if (r.qr) document.getElementById('qr').innerHTML = r.qr;
+    // Only touch the QR when it changes, so the 2 s refresh does not redraw it.
+    if (r.qr && r.qr !== lastQr) { lastQr = r.qr; document.getElementById('qr').innerHTML = r.qr; }
     document.getElementById('url').textContent = r.url || (r.listenError ? '端口被占用：' + r.listenError : '没有找到电视的局域网地址');
     var ok = false, text;
     if (r.pairing === 'prompting') text = '请在电视弹出的提示里选择「允许」';
     else if (r.pairing !== 'ready') text = '正在连接电视的输入接口…' + (r.error ? '（' + r.error + '）' : '');
-    else { ok = true; text = '已就绪。打开支持的 App，用手机打字即可'; }
+    else { ok = true; text = '已就绪，打开支持的 App 就能用手机打字'; }
     dot.classList.toggle('ok', ok); statusText.textContent = text;
   }
   function refresh() { call('state', {}, render); }

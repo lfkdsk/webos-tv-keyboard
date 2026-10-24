@@ -2,99 +2,212 @@
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="电视键盘">
+<meta name="theme-color" content="#0b0f17" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f3f5f9" media="(prefers-color-scheme: light)">
 <title>电视键盘</title>
 <style>
-  :root { --bg: #0e1116; --card: #191d24; --line: #2a303a; --text: #eef1f5; --muted: #8f99a8; --accent: #5aa9ff; --ok: #3ccf91; --warn: #f2b84b; }
-  * { box-sizing: border-box; }
-  html, body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.5 -apple-system, BlinkMacSystemFont, "PingFang SC", "Noto Sans CJK SC", sans-serif; }
-  main { max-width: 640px; margin: 0 auto; padding: max(20px, env(safe-area-inset-top)) 16px 24px; }
-  h1 { font-size: 20px; margin: 0 0 4px; }
-  #status { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 14px; margin-bottom: 16px; }
-  #dot { width: 10px; height: 10px; border-radius: 50%; background: var(--warn); flex: none; }
-  #dot.ok { background: var(--ok); }
-  textarea { width: 100%; min-height: 120px; resize: vertical; padding: 14px; border-radius: 14px; border: 1px solid var(--line); background: var(--card); color: var(--text); font: inherit; font-size: 18px; outline: none; }
-  textarea:focus { border-color: var(--accent); }
-  .row { display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
-  button { flex: 1; min-width: 96px; padding: 13px 10px; border-radius: 12px; border: 1px solid var(--line); background: var(--card); color: var(--text); font: inherit; font-weight: 600; }
-  button.primary { background: var(--accent); border-color: var(--accent); color: #04121f; }
-  button:active { transform: scale(0.98); }
-  label { display: flex; align-items: center; gap: 8px; margin-top: 14px; color: var(--muted); font-size: 14px; }
-  #hint { margin-top: 18px; color: var(--muted); font-size: 13px; }
+  :root {
+    --bg: #f3f5f9; --surface: #ffffff; --surface-2: #eef1f6; --line: #dfe4ec; --text: #121722; --muted: #667085;
+    --accent: #2f6fed; --accent-ink: #ffffff; --ok: #16a36a; --warn: #d98b0b; --bad: #d2463c; --shadow: 0 1px 2px rgba(16,24,40,.06), 0 8px 24px rgba(16,24,40,.06);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0b0f17; --surface: #141a24; --surface-2: #1b2230; --line: #263042; --text: #eef2f8; --muted: #8b97ab;
+      --accent: #5b9bff; --accent-ink: #06101f; --ok: #35c98b; --warn: #f0b34a; --bad: #ff6b5f; --shadow: none;
+    }
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.5 -apple-system, BlinkMacSystemFont, "PingFang SC", "Noto Sans CJK SC", "Segoe UI", sans-serif; }
+  main { max-width: 560px; margin: 0 auto; padding: max(18px, env(safe-area-inset-top)) 16px max(24px, env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 14px; min-height: 100dvh; }
+
+  header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 18px; letter-spacing: .01em; }
+  .logo { width: 30px; height: 30px; border-radius: 9px; background: linear-gradient(160deg, #3d7bff, #1b3f99); display: grid; place-items: center; }
+  .logo svg { width: 18px; height: 18px; fill: #fff; }
+  .pill { display: inline-flex; align-items: center; gap: 7px; padding: 5px 11px; border-radius: 999px; background: var(--surface); border: 1px solid var(--line); color: var(--muted); font-size: 13px; white-space: nowrap; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--warn); }
+  .dot.ok { background: var(--ok); } .dot.bad { background: var(--bad); }
+
+  .target { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 14px 16px; box-shadow: var(--shadow); display: flex; align-items: center; gap: 14px; }
+  .app-badge { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; font-weight: 700; font-size: 18px; color: #fff; flex: none; background: #5d6b82; }
+  .target-text { min-width: 0; }
+  .target-label { color: var(--muted); font-size: 12px; letter-spacing: .04em; }
+  .target-name { font-size: 18px; font-weight: 650; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .target-hint { color: var(--muted); font-size: 13px; }
+
+  .composer { background: var(--surface); border: 1px solid var(--line); border-radius: 20px; box-shadow: var(--shadow); overflow: hidden; transition: border-color .15s; }
+  .composer:focus-within { border-color: var(--accent); }
+  textarea { display: block; width: 100%; min-height: 128px; max-height: 40vh; resize: none; padding: 16px 16px 6px; border: 0; background: transparent; color: var(--text); font: inherit; font-size: 20px; line-height: 1.45; outline: none; }
+  textarea::placeholder { color: var(--muted); opacity: .8; }
+  .composer-bar { display: flex; align-items: center; justify-content: space-between; padding: 6px 10px 10px 16px; color: var(--muted); font-size: 12px; }
+  .sync { display: inline-flex; align-items: center; gap: 6px; }
+  .sync.on { color: var(--ok); }
+
+  .actions { display: grid; grid-template-columns: 1fr 1fr 2fr; gap: 10px; }
+  button { appearance: none; border: 1px solid var(--line); background: var(--surface); color: var(--text); border-radius: 14px; padding: 14px 10px; font: inherit; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 8px; touch-action: manipulation; }
+  button svg { width: 18px; height: 18px; fill: currentColor; }
+  button.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+  button:active { transform: scale(.98); }
+  button:disabled { opacity: .45; }
+
+  .section-title { color: var(--muted); font-size: 12px; letter-spacing: .06em; margin: 6px 2px -4px; display: flex; justify-content: space-between; }
+  .section-title button { padding: 0; border: 0; background: none; color: var(--muted); font-weight: 500; font-size: 12px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip { padding: 8px 12px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--line); font-size: 14px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
+  .empty { color: var(--muted); font-size: 13px; }
+
+  .settings { margin-top: auto; display: flex; flex-direction: column; gap: 10px; }
+  .toggle { display: flex; align-items: center; justify-content: space-between; gap: 12px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; font-size: 14px; }
+  .toggle small { display: block; color: var(--muted); font-size: 12px; }
+  .switch { position: relative; width: 46px; height: 28px; flex: none; }
+  .switch input { opacity: 0; width: 0; height: 0; }
+  .track { position: absolute; inset: 0; border-radius: 999px; background: var(--line); transition: background .15s; }
+  .track::after { content: ''; position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.25); transition: transform .15s; }
+  .switch input:checked + .track { background: var(--ok); }
+  .switch input:checked + .track::after { transform: translateX(18px); }
+  .foot { color: var(--muted); font-size: 12px; text-align: center; line-height: 1.6; }
+
+  #toast { position: fixed; left: 50%; bottom: max(24px, env(safe-area-inset-bottom)); transform: translate(-50%, 20px); opacity: 0; transition: .2s; background: var(--text); color: var(--bg); padding: 10px 16px; border-radius: 12px; font-size: 14px; max-width: calc(100% - 32px); pointer-events: none; }
+  #toast.show { opacity: 1; transform: translate(-50%, 0); }
 </style>
 </head>
 <body>
 <main>
-  <h1>电视键盘</h1>
-  <div id="status"><span id="dot"></span><span id="statusText">连接中…</span></div>
-  <textarea id="box" placeholder="在这里打字，内容会同步到电视上正在输入的框里" autocapitalize="off" autocomplete="off" autocorrect="off" spellcheck="false"></textarea>
-  <div class="row">
-    <button class="primary" id="enter">发送 / 搜索</button>
+  <header>
+    <div class="brand"><span class="logo"><svg viewBox="0 0 24 24"><path d="M3 6.5A2.5 2.5 0 0 1 5.5 4h13A2.5 2.5 0 0 1 21 6.5v8a2.5 2.5 0 0 1-2.5 2.5H14l1 2h1a1 1 0 1 1 0 2H8a1 1 0 1 1 0-2h1l1-2H5.5A2.5 2.5 0 0 1 3 14.5v-8Zm4 2a1 1 0 1 0 0 2h.01a1 1 0 1 0 0-2H7Zm3.5 0a1 1 0 1 0 0 2h.01a1 1 0 1 0 0-2h-.01Zm3.5 0a1 1 0 1 0 0 2h.01a1 1 0 1 0 0-2H14Zm3.5 0a1 1 0 1 0 0 2h.01a1 1 0 1 0 0-2h-.01ZM8 12a1 1 0 1 0 0 2h8a1 1 0 1 0 0-2H8Z"/></svg></span>电视键盘</div>
+    <span class="pill"><span class="dot" id="dot"></span><span id="conn">连接中</span></span>
+  </header>
+
+  <section class="target" aria-live="polite">
+    <div class="app-badge" id="badge">TV</div>
+    <div class="target-text">
+      <div class="target-label">正在输入到</div>
+      <div class="target-name" id="appName">—</div>
+      <div class="target-hint" id="appHint">正在获取电视上的应用…</div>
+    </div>
+  </section>
+
+  <section class="composer">
+    <textarea id="box" placeholder="想搜什么？在这里打字" autocapitalize="off" autocomplete="off" autocorrect="off" spellcheck="false" enterkeyhint="search"></textarea>
+    <div class="composer-bar"><span id="count">0 字</span><span class="sync" id="syncState">同步已关</span></div>
+  </section>
+
+  <div class="actions">
+    <button id="back" aria-label="退格"><svg viewBox="0 0 24 24"><path d="M9.2 5h10.3A2.5 2.5 0 0 1 22 7.5v9a2.5 2.5 0 0 1-2.5 2.5H9.2a2.5 2.5 0 0 1-1.86-.83l-4.05-4.5a2.5 2.5 0 0 1 0-3.34l4.05-4.5A2.5 2.5 0 0 1 9.2 5Zm2.5 4.3a1 1 0 0 0-1.4 1.4l1.29 1.3-1.3 1.3a1 1 0 1 0 1.42 1.4L13 14.42l1.3 1.3a1 1 0 0 0 1.4-1.42L14.42 13l1.3-1.3a1 1 0 0 0-1.42-1.4L13 11.58l-1.3-1.29Z"/></svg>退格</button>
     <button id="clear">清空</button>
+    <button class="primary" id="enter"><svg viewBox="0 0 24 24"><path d="M10.5 3a7.5 7.5 0 0 1 5.96 12.05l4.25 4.24a1 1 0 0 1-1.42 1.42l-4.24-4.25A7.5 7.5 0 1 1 10.5 3Zm0 2a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11Z"/></svg>搜索</button>
   </div>
-  <label><input type="checkbox" id="live" checked> 边打边同步（关掉则只在点「发送」时一次性填入）</label>
-  <div id="hint">支持开发者模式侧载的应用（Moonfin、海外哔哩、BiliTV、启动器等），LG 商店应用不支持。打完点「发送 / 搜索」相当于回车。可以把这个页面添加到主屏幕。</div>
+
+  <div class="section-title"><span>最近输入</span><button id="forget">清除</button></div>
+  <div class="chips" id="recent"><span class="empty">发送过的内容会出现在这里，点一下再次发送。</span></div>
+
+  <div class="settings">
+    <label class="toggle"><span>边打边同步<small>关掉后只在点「搜索」时一次性填入电视</small></span><span class="switch"><input type="checkbox" id="live" checked><span class="track"></span></span></label>
+    <div class="foot">支持开发者模式侧载的应用（Moonfin、海外哔哩、BiliTV、启动器等），LG 商店应用不支持。<br>把这个页面添加到主屏幕，下次直接打开。</div>
+  </div>
 </main>
+<div id="toast"></div>
 <script>
 (function () {
   'use strict';
   var token = new URLSearchParams(location.search).get('t');
-  var box = document.getElementById('box'), live = document.getElementById('live');
-  var dot = document.getElementById('dot'), statusText = document.getElementById('statusText');
-  var composing = false, timer = null, sent = '';
-  try { live.checked = localStorage.getItem('tvkb.live') !== '0'; } catch (e) {}
-  live.onchange = function () { try { localStorage.setItem('tvkb.live', live.checked ? '1' : '0'); } catch (e) {} };
+  var $ = function (id) { return document.getElementById(id); };
+  var box = $('box'), live = $('live');
+  var composing = false, timer = null, sent = '', lastApp = null, supported = false;
+  var APPS = {
+    'org.moonfin.webos': ['Moonfin', '#6b4fd8'], 'com.lfkdsk.overseabili': ['海外哔哩', '#fb7299'], 'com.biliwebos.app': ['BiliTV', '#00a1d6'],
+    'com.gathin.tvhome': ['启动器', '#25282d'], 'com.lfkdsk.aerials': ['航拍屏保', '#1b3a6b'], 'com.lfkdsk.tvkeyboard': ['电视键盘', '#2b5aa8'],
+    'youtube.leanback.v4': ['YouTube', '#ff0033'], 'netflix': ['Netflix', '#e50914'], 'com.emby.app': ['Emby', '#52b54b'], 'com.webos.app.home': ['LG 主页', '#a50034']
+  };
+  function store(k, v) { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) { return null; } }
+  live.checked = store('tvkb.live') !== '0';
+  function syncLabel() { var s = $('syncState'); s.textContent = live.checked ? '● 边打边同步' : '同步已关'; s.classList.toggle('on', live.checked); }
+  live.onchange = function () { store('tvkb.live', live.checked ? '1' : '0'); syncLabel(); if (live.checked) schedule(); };
+  syncLabel();
 
+  var toastTimer;
+  function toast(msg) { var t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(function () { t.classList.remove('show'); }, 2600); }
   function api(path, body) {
     return fetch(path + '?t=' + encodeURIComponent(token), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body || {}) })
-      .then(function (r) { return r.json(); }).catch(function () { return { ok: false, error: 'network' }; });
+      .then(function (r) { return r.json(); }).catch(function () { return { ok: false, message: '网络错误，手机和电视要在同一个网络里' }; });
   }
   // Only ever touch what this page put there: delete back to the common prefix, insert the rest.
   var queue = Promise.resolve();
   function sync(target) {
     queue = queue.then(function () {
       var i = 0; while (i < sent.length && i < target.length && sent[i] === target[i]) i++;
-      var del = sent.length - i, add = target.slice(i), steps = Promise.resolve();
+      var del = sent.length - i, add = target.slice(i), steps = Promise.resolve({ ok: true });
       if (del > 0) steps = steps.then(function () { return api('/api/delete', { count: del }); });
-      if (add) steps = steps.then(function () { return api('/api/insert', { text: add }); });
-      return steps.then(function (r) { if (!r || r.ok !== false) sent = target; else show(false, r.message || ('发送失败：' + r.error)); });
+      if (add) steps = steps.then(function (r) { return r && r.ok === false ? r : api('/api/insert', { text: add }); });
+      return steps.then(function (r) { if (r && r.ok === false) { toast(r.message || r.error); return r; } sent = target; return r; });
     });
     return queue;
   }
-  function schedule() { if (!live.checked || composing) return; clearTimeout(timer); timer = setTimeout(function () { sync(box.value); }, 120); }
+  function count() { $('count').textContent = Array.from(box.value).length + ' 字'; }
+  function schedule() { count(); if (!live.checked || composing) return; clearTimeout(timer); timer = setTimeout(function () { sync(box.value); }, 120); }
   box.addEventListener('compositionstart', function () { composing = true; });
   box.addEventListener('compositionend', function () { composing = false; schedule(); });
   box.addEventListener('input', schedule);
   box.addEventListener('keydown', function (e) { if (e.key === 'Enter' && !e.shiftKey && !composing) { e.preventDefault(); enter(); } });
 
+  function remember(text) {
+    text = text.trim(); if (!text) return;
+    var list = []; try { list = JSON.parse(store('tvkb.recent') || '[]'); } catch (e) {}
+    list = [text].concat(list.filter(function (x) { return x !== text; })).slice(0, 10);
+    store('tvkb.recent', JSON.stringify(list)); renderRecent();
+  }
+  function renderRecent() {
+    var list = []; try { list = JSON.parse(store('tvkb.recent') || '[]'); } catch (e) {}
+    var el = $('recent'); el.innerHTML = '';
+    if (!list.length) { el.innerHTML = '<span class="empty">发送过的内容会出现在这里，点一下再次发送。</span>'; return; }
+    list.forEach(function (t) { var b = document.createElement('button'); b.className = 'chip'; b.textContent = t; b.onclick = function () { box.value = t; count(); enter(); }; el.appendChild(b); });
+  }
+  $('forget').onclick = function () { store('tvkb.recent', '[]'); renderRecent(); };
+
   function enter() {
     clearTimeout(timer);
-    sync(box.value).then(function () { return api('/api/enter'); }).then(function (r) { if (r && r.ok === false) { show(false, r.message || r.error); return; } box.value = ''; sent = ''; });
+    var text = box.value;
+    sync(text).then(function (r) {
+      if (r && r.ok === false) return;
+      return api('/api/enter').then(function (e) {
+        if (e && e.ok === false) { toast(e.message || e.error); return; }
+        remember(text); box.value = ''; sent = ''; count(); toast('已发送');
+      });
+    });
   }
-  document.getElementById('enter').onclick = enter;
-  document.getElementById('clear').onclick = function () { box.value = ''; sync(''); box.focus(); };
+  $('enter').onclick = enter;
+  $('back').onclick = function () { if (box.value) { box.value = Array.from(box.value).slice(0, -1).join(''); schedule(); if (!live.checked) api('/api/delete', { count: 1 }); } else api('/api/delete', { count: 1 }); };
+  $('clear').onclick = function () { box.value = ''; count(); sync(''); box.focus(); };
 
-  function show(ok, text) { dot.classList.toggle('ok', ok); statusText.textContent = text; }
-  var NAMES = { 'org.moonfin.webos': 'Moonfin', 'com.lfkdsk.overseabili': '海外哔哩', 'com.biliwebos.app': 'BiliTV', 'com.gathin.tvhome': '启动器', 'youtube.leanback.v4': 'YouTube', 'netflix': 'Netflix', 'com.emby.app': 'Emby' };
-  var lastApp = null;
+  function setConn(state, text) { var d = $('dot'); d.className = 'dot' + (state ? ' ' + state : ''); $('conn').textContent = text; }
   function render(s) {
-    var name = s.appId ? (NAMES[s.appId] || s.appId) : '未知';
-    if (s.pairing === 'prompting') show(false, '请在电视上同意「允许连接」');
-    else if (s.pairing !== 'ready') show(false, '电视连接中…');
-    else if (!s.supported) show(false, '当前：' + name + '，不支持远程输入（只支持侧载应用）');
-    else if (s.focusedEditable) show(true, '当前：' + name + '，输入框已选中，可以打字');
-    else show(true, '当前：' + name + '。打字时会自动选中页面上的输入框');
-    // Switching apps starts a fresh field: forget what was sent to the previous one.
-    if (s.appId !== lastApp) { sent = ''; lastApp = s.appId; }
+    if (s.pairing === 'prompting') setConn('', '请在电视上点「允许」');
+    else if (s.pairing !== 'ready') setConn('', '连接电视中');
+    else setConn('ok', '已连接');
+    var meta = APPS[s.appId] || [s.appId ? s.appId.split('.').pop() : '—', '#5d6b82'];
+    $('appName').textContent = meta[0];
+    var badge = $('badge'); badge.textContent = (meta[0] || 'TV').slice(0, 1).toUpperCase(); badge.style.background = meta[1];
+    supported = !!s.supported;
+    $('appHint').textContent = !s.appId ? '正在获取电视上的应用…'
+      : !s.supported ? '这个应用不支持远程输入，请切到侧载应用'
+      : s.focusedEditable ? '输入框已选中，直接打字即可' : '打字时会自动选中页面上的输入框';
+    if (s.pairing === 'ready' && s.appId && !s.supported) setConn('bad', '不支持');
+    // Switching apps starts a fresh field: forget what was sent before and re-send what is typed.
+    if (s.appId !== lastApp) { sent = ''; lastApp = s.appId; if (s.supported && live.checked && box.value) schedule(); }
   }
+  var es;
   function listen() {
-    var es = new EventSource('/events?t=' + encodeURIComponent(token));
+    if (es) es.close();
+    es = new EventSource('/events?t=' + encodeURIComponent(token));
     es.onmessage = function (e) { try { render(JSON.parse(e.data)); } catch (err) {} };
-    es.onerror = function () { show(false, '与电视的连接断开，重连中…'); };
+    es.onerror = function () { setConn('bad', '连接断开，重连中'); };
   }
-  listen();
-  box.focus();
+  document.addEventListener('visibilitychange', function () { if (!document.hidden) listen(); });
+  renderRecent(); count(); listen();
+  if (matchMedia('(pointer: fine)').matches) box.focus();
 })();
 </script>
 </body>
